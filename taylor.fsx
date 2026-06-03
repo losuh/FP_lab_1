@@ -1,25 +1,59 @@
-// Print a table of a given function f, computed by taylor series
-
-// function to compute
-let f = sin
-
-let a = 0.0
-let b = 1.0
-let n = 10
-
-// Define a function to compute f using naive taylor series method
-let taylor_naive = f
+let eps = 1e-6
+let a = 0.1
+let b = 0.6
+let pointCount = 10
 
 
-// Define a function to do the same in a more efficient way
-let taylor = f
+let builtin x =
+    (2.0 * x - 3.0) / ((x - 1.0) * (x - 1.0))
 
-let main =
-   for i=0 to n do
-     let x = a+(float i)/(float n)*(b-a)
-     printfn "%5.2f  %10.6f  %10.6f   %10.6f" x (f x) (taylor_naive x) (taylor x)
-// make sure to improve this table to include the required number of iterations
-// for each of the methods
 
-main
+let rec taylorSum next n term sum x =
+    if abs term < eps then
+        sum, n
+    else
+        let sum' = sum + term
+        let n', term' = next n term x
+        taylorSum next n' term' sum' x
 
+
+let dumbNext n _term x =
+    let n' = n + 1
+    let term' = -(float (n' + 3)) * (pown x n')
+    n', term'
+
+let dumbTaylor x =
+    taylorSum dumbNext 0 (-(float 3) * (pown x 0)) 0.0 x
+
+
+let smartNext n term x =
+    let n' = n + 1
+    let term' = term * x * (float (n + 4) / float (n + 3))
+    n', term'
+
+let smartTaylor x =
+    taylorSum smartNext 0 (-3.0) 0.0 x
+
+
+let gridPoints =
+    [0 .. pointCount - 1]
+    |> List.map (fun i -> a + float i * (b - a) / float (pointCount - 1))
+
+let printHeader () =
+    printfn "--------------------------------------------------------------------------------"
+    printfn "|    x   |    Builtin    | Smart Taylor  | # terms |  Dumb Taylor  | # terms |"
+    printfn "--------------------------------------------------------------------------------"
+
+let printRow x =
+    let builtinValue = builtin x
+    let smartValue, smartTerms = smartTaylor x
+    let dumbValue, dumbTerms = dumbTaylor x
+    printfn "| %6.2f | %12.6f | %12.6f | %7d | %12.6f | %7d |"
+        x builtinValue smartValue smartTerms dumbValue dumbTerms
+
+let printTable () =
+    printHeader ()
+    gridPoints |> List.iter printRow
+    printfn "--------------------------------------------------------------------------------"
+
+printTable ()
